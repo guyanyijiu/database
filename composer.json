@@ -1,0 +1,30 @@
+{
+    "name": "guyanyijiu/database",
+    "type": "library",
+    "description": "基于 medoo 的轻量级 ORM",
+    "keywords": ["database", "lightweight", "PHP framework", "SQL", "MySQL", "MSSQL", "SQLite", "PostgreSQL", "MariaDB", "Oracle"],
+    "license": "MIT",
+    "authors": [
+        {"name": "liuchao", "email": "php_liuchao@163.com"}
+    ],
+    "require": {
+        "php": ">=5.4",
+        "ext-pdo": "*",
+        "catfan/medoo": "^1.4",
+        "pimple/pimple": "^3.2"
+    },
+    "suggest": {
+        "ext-pdo_mysql": "For MySQL or MariaDB database",
+        "ext-pdo_sqlsrv": "For MSSQL database on Windows platform",
+        "ext-pdo_dblib": "For MSSQL or Sybase database on Linux/UNIX platform",
+        "ext-pdo_oci": "For Oracle database",
+        "ext-pdo_oci8": "For Oracle version 8 database",
+        "ext-pdo_pqsql": "For PostgreSQL database",
+        "ext-pdo_sqlite": "For SQLite database"
+    },
+    "autoload": {
+        "psr-4": {
+            "Database\\": "/src"
+        }
+    }
+}
