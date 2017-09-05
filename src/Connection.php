@@ -303,15 +303,27 @@ class Connection
      * @param $parameters
      *
      * @return mixed
+     * @throws \Exception
      */
     public function __call($method, $parameters){
-        if($this->isReadOrWrite($method) == 'read'){
-            return call_user_func_array([$this->getPdoForRead(), $method], $parameters);
+        $checkMethod = $this->isReadOrWrite($method);
+
+        if(! $checkMethod){
+            throw new \BadMethodCallException($method);
         }
-        if($this->isReadOrWrite($method) == 'write'){
-            return call_user_func_array([$this->getPrimaryPdo(), $method], $parameters);
+
+        if($this->transactions == 1 || $checkMethod == 'write'){
+            $pdo = $this->getPrimaryPdo();
+        }else{
+            $pdo = $this->getPdoForRead();
         }
-        throw new \BadMethodCallException($method);
+
+        $result = call_user_func_array([$pdo, $method], $parameters);
+        $error = $pdo->error();
+        if($error[1] || $error[2]){
+            throw new \Exception($error[0] . ' : ' . $error[2], $error[1]);
+        }
+        return $result;
     }
 
     /**

@@ -24,7 +24,7 @@ trait ManagesTransactions
             $this->beginTransaction();
 
             try {
-                $result = $callback($this->getPrimaryPdo());
+                $result = $callback($this);
                 $this->commit();
                 return $result;
             }
