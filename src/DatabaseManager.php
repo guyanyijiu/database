@@ -95,7 +95,7 @@ class DatabaseManager{
 
         $connections = $this->container['config']['database.connections'];
 
-        if (!in_array($name, $connections)) {
+        if (!array_key_exists($name, $connections)) {
             throw new \InvalidArgumentException("Database [$name] not configured.");
         }
 
