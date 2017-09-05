@@ -2,8 +2,16 @@
 namespace Database;
 
 use Closure;
+
 class Connection
 {
+    /**
+     * 事务支持
+     */
+    use DetectsDeadlocks;
+    use DetectsLostConnections;
+    use ManagesTransactions;
+
     /**
      * 主PDO连接
      *
@@ -40,7 +48,7 @@ class Connection
     protected $config = [];
 
     /**
-     * 开启的事务数
+     * 开启事务
      *
      * @var int
      */
@@ -187,6 +195,20 @@ class Connection
     }
 
     /**
+     * 重连
+     *
+     * @Author   liuchao
+     * @return mixed
+     */
+    public function reconnect(){
+        if (is_callable($this->reconnector)) {
+            return call_user_func($this->reconnector, $this);
+        }
+
+        throw new LogicException('Lost connection and no reconnector available.');
+    }
+
+    /**
      * 获取当前连接的配置
      *
      * @Author   liuchao
@@ -219,6 +241,15 @@ class Connection
         return $this->tablePrefix;
     }
 
+    /**
+     * 支持的读写方法
+     *
+     * @Author   liuchao
+     *
+     * @param $method
+     *
+     * @return bool|string
+     */
     protected function isReadOrWrite($method){
         $read = [
             'where',
@@ -230,6 +261,7 @@ class Connection
             'min',
             'avg',
             'sum',
+            'query',
         ];
 
         $write = [
@@ -256,9 +288,10 @@ class Connection
      * @Author   liuchao
      *
      * @param callable $callback
+     * @param int      $attempts
      */
-    public function action(callable $callback){
-
+    public function action(callable $callback, $attempts = 1){
+        $this->transaction($callback, $attempts);
     }
 
     /**
