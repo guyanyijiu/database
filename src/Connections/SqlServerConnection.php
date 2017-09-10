@@ -57,7 +57,7 @@ class SqlServerConnection extends Connection
     /**
      * Get the default query grammar instance.
      *
-     * @return \Illuminate\Database\Query\Grammars\SqlServerGrammar
+     * @return \guyanyijiu\Database\Query\Grammars\SqlServerGrammar
      */
     protected function getDefaultQueryGrammar()
     {
@@ -67,7 +67,7 @@ class SqlServerConnection extends Connection
     /**
      * Get the default post processor instance.
      *
-     * @return \Illuminate\Database\Query\Processors\SqlServerProcessor
+     * @return \guyanyijiu\Database\Query\Processors\SqlServerProcessor
      */
     protected function getDefaultPostProcessor()
     {

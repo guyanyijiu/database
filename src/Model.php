@@ -84,7 +84,7 @@ abstract class Model
      * 获取当前数据库连接
      *
      * @Author   liuchao
-     * @return \Illuminate\Database\Connection
+     * @return \guyanyijiu\Database\Connections\Connection
      */
     public function getConnection()
     {

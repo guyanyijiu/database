@@ -10,7 +10,7 @@ class SQLiteConnection extends Connection
     /**
      * Get the default query grammar instance.
      *
-     * @return \Illuminate\Database\Query\Grammars\SQLiteGrammar
+     * @return \guyanyijiu\Database\Query\Grammars\SQLiteGrammar
      */
     protected function getDefaultQueryGrammar()
     {
@@ -20,7 +20,7 @@ class SQLiteConnection extends Connection
     /**
      * Get the default post processor instance.
      *
-     * @return \Illuminate\Database\Query\Processors\SQLiteProcessor
+     * @return \guyanyijiu\Database\Query\Processors\SQLiteProcessor
      */
     protected function getDefaultPostProcessor()
     {

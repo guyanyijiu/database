@@ -11,7 +11,7 @@ class MySqlConnection extends Connection
     /**
      * Get the default query grammar instance.
      *
-     * @return \Illuminate\Database\Query\Grammars\MySqlGrammar
+     * @return \guyanyijiu\Database\Query\Grammars\MySqlGrammar
      */
     protected function getDefaultQueryGrammar()
     {
@@ -22,21 +22,11 @@ class MySqlConnection extends Connection
     /**
      * Get the default post processor instance.
      *
-     * @return \Illuminate\Database\Query\Processors\MySqlProcessor
+     * @return \guyanyijiu\Database\Query\Processors\MySqlProcessor
      */
     protected function getDefaultPostProcessor()
     {
         return new MySqlProcessor;
-    }
-
-    /**
-     * Get the Doctrine DBAL driver.
-     *
-     * @return \Doctrine\DBAL\Driver\PDOMySql\Driver
-     */
-    protected function getDoctrineDriver()
-    {
-        return new DoctrineDriver;
     }
 
     /**

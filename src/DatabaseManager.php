@@ -293,6 +293,13 @@ class DatabaseManager
         return call_user_func_array([$this->connection(), $method], $parameters);
     }
 
+    /**
+     * Dynamically pass methods to the default connection.
+     *
+     * @param $method
+     * @param $parameters
+     * @return mixed
+     */
     public static function __callStatic($method, $parameters)
     {
         return call_user_func_array([static::$instance->connection(), $method], $parameters);

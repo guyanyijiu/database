@@ -10,6 +10,7 @@ use PDOStatement;
 use LogicException;
 use DateTimeInterface;
 use guyanyijiu\Support\Arr;
+use guyanyijiu\Database\QueryException;
 use guyanyijiu\Database\Query\Grammar;
 use guyanyijiu\Database\Query\Expression;
 use guyanyijiu\Database\Query\Processors\Processor;
@@ -70,14 +71,14 @@ class Connection
     /**
      * The query grammar implementation.
      *
-     * @var \Illuminate\Database\Query\Grammars\Grammar
+     * @var \guyanyijiu\Database\Query\Grammars\Grammar
      */
     protected $queryGrammar;
 
     /**
      * The query post processor implementation.
      *
-     * @var \Illuminate\Database\Query\Processors\Processor
+     * @var \guyanyijiu\Database\Query\Processors\Processor
      */
     protected $postProcessor;
 
@@ -159,7 +160,7 @@ class Connection
     /**
      * Get the default query grammar instance.
      *
-     * @return \Illuminate\Database\Query\Grammars\Grammar
+     * @return \guyanyijiu\Database\Query\Grammars\Grammar
      */
     protected function getDefaultQueryGrammar()
     {
@@ -179,7 +180,7 @@ class Connection
     /**
      * Get the default post processor instance.
      *
-     * @return \Illuminate\Database\Query\Processors\Processor
+     * @return \guyanyijiu\Database\Query\Processors\Processor
      */
     protected function getDefaultPostProcessor()
     {
@@ -190,7 +191,7 @@ class Connection
      * Begin a fluent query against a database table.
      *
      * @param  string  $table
-     * @return \Illuminate\Database\Query\Builder
+     * @return \guyanyijiu\Database\Query\Builder
      */
     public function table($table)
     {
@@ -200,7 +201,7 @@ class Connection
     /**
      * Get a new query builder instance.
      *
-     * @return \Illuminate\Database\Query\Builder
+     * @return \guyanyijiu\Database\Query\Builder
      */
     public function query()
     {
@@ -527,7 +528,7 @@ class Connection
      * @param  \Closure  $callback
      * @return mixed
      *
-     * @throws \Illuminate\Database\QueryException
+     * @throws \guyanyijiu\Database\QueryException
      */
     protected function run($query, $bindings, Closure $callback)
     {
@@ -564,7 +565,7 @@ class Connection
      * @param  \Closure  $callback
      * @return mixed
      *
-     * @throws \Illuminate\Database\QueryException
+     * @throws \guyanyijiu\Database\QueryException
      */
     protected function runQueryCallback($query, $bindings, Closure $callback)
     {
@@ -636,13 +637,13 @@ class Connection
     /**
      * Handle a query exception that occurred during query execution.
      *
-     * @param  \Illuminate\Database\QueryException  $e
+     * @param  \guyanyijiu\Database\QueryException  $e
      * @param  string    $query
      * @param  array     $bindings
      * @param  \Closure  $callback
      * @return mixed
      *
-     * @throws \Illuminate\Database\QueryException
+     * @throws \guyanyijiu\Database\QueryException
      */
     protected function tryAgainIfCausedByLostConnection(QueryException $e, $query, $bindings, Closure $callback)
     {
@@ -697,7 +698,7 @@ class Connection
      * Get a new raw query expression.
      *
      * @param  mixed  $value
-     * @return \Illuminate\Database\Query\Expression
+     * @return \guyanyijiu\Database\Query\Expression
      */
     public function raw($value)
     {
@@ -811,7 +812,7 @@ class Connection
     /**
      * Get the query grammar used by the connection.
      *
-     * @return \Illuminate\Database\Query\Grammars\Grammar
+     * @return \guyanyijiu\Database\Query\Grammars\Grammar
      */
     public function getQueryGrammar()
     {
@@ -821,7 +822,7 @@ class Connection
     /**
      * Set the query grammar used by the connection.
      *
-     * @param  \Illuminate\Database\Query\Grammars\Grammar  $grammar
+     * @param  \guyanyijiu\Database\Query\Grammars\Grammar  $grammar
      * @return void
      */
     public function setQueryGrammar(Query\Grammars\Grammar $grammar)
@@ -833,7 +834,7 @@ class Connection
     /**
      * Get the query post processor used by the connection.
      *
-     * @return \Illuminate\Database\Query\Processors\Processor
+     * @return \guyanyijiu\Database\Query\Processors\Processor
      */
     public function getPostProcessor()
     {
@@ -843,7 +844,7 @@ class Connection
     /**
      * Set the query post processor used by the connection.
      *
-     * @param  \Illuminate\Database\Query\Processors\Processor  $processor
+     * @param  \guyanyijiu\Database\Query\Processors\Processor  $processor
      * @return void
      */
     public function setPostProcessor(Processor $processor)
@@ -958,8 +959,8 @@ class Connection
     /**
      * Set the table prefix and return the grammar.
      *
-     * @param  \Illuminate\Database\Grammar  $grammar
-     * @return \Illuminate\Database\Grammar
+     * @param  \guyanyijiu\Database\Query\Grammar  $grammar
+     * @return \guyanyijiu\Database\Query\Grammar
      */
     public function withTablePrefix(Grammar $grammar)
     {

@@ -20,7 +20,7 @@ class SQLiteGrammar extends Grammar
     /**
      * Compile a "where date" clause.
      *
-     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  \guyanyijiu\Database\Query\Builder  $query
      * @param  array  $where
      * @return string
      */
@@ -32,7 +32,7 @@ class SQLiteGrammar extends Grammar
     /**
      * Compile a "where day" clause.
      *
-     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  \guyanyijiu\Database\Query\Builder  $query
      * @param  array  $where
      * @return string
      */
@@ -44,7 +44,7 @@ class SQLiteGrammar extends Grammar
     /**
      * Compile a "where month" clause.
      *
-     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  \guyanyijiu\Database\Query\Builder  $query
      * @param  array  $where
      * @return string
      */
@@ -56,7 +56,7 @@ class SQLiteGrammar extends Grammar
     /**
      * Compile a "where year" clause.
      *
-     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  \guyanyijiu\Database\Query\Builder  $query
      * @param  array  $where
      * @return string
      */
@@ -69,7 +69,7 @@ class SQLiteGrammar extends Grammar
      * Compile a date based where clause.
      *
      * @param  string  $type
-     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  \guyanyijiu\Database\Query\Builder  $query
      * @param  array  $where
      * @return string
      */
@@ -85,7 +85,7 @@ class SQLiteGrammar extends Grammar
     /**
      * Compile an insert statement into SQL.
      *
-     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  \guyanyijiu\Database\Query\Builder  $query
      * @param  array  $values
      * @return string
      */
@@ -126,7 +126,7 @@ class SQLiteGrammar extends Grammar
     /**
      * Compile a truncate table statement into SQL.
      *
-     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  \guyanyijiu\Database\Query\Builder  $query
      * @return array
      */
     public function compileTruncate(Builder $query)

@@ -13,29 +13,11 @@ use guyanyijiu\Database\Connections\SqlServerConnection;
 class ConnectionFactory
 {
     /**
-     * The IoC container instance.
-     *
-     * @var \Illuminate\Contracts\Container\Container
-     */
-//    protected $container;
-
-    /**
-     * Create a new connection factory instance.
-     *
-     * @param  \Illuminate\Contracts\Container\Container  $container
-     * @return void
-     */
-//    public function __construct(Container $container)
-//    {
-//        $this->container = $container;
-//    }
-
-    /**
      * Establish a PDO connection based on the configuration.
      *
      * @param  array   $config
      * @param  string  $name
-     * @return \Illuminate\Database\Connection
+     * @return \guyanyijiu\Database\Connections\Connection
      */
     public function make(array $config, $name = null)
     {
@@ -64,7 +46,7 @@ class ConnectionFactory
      * Create a single database connection instance.
      *
      * @param  array  $config
-     * @return \Illuminate\Database\Connection
+     * @return \guyanyijiu\Database\Connections\Connection
      */
     protected function createSingleConnection(array $config)
     {
@@ -79,7 +61,7 @@ class ConnectionFactory
      * Create a single database connection instance.
      *
      * @param  array  $config
-     * @return \Illuminate\Database\Connection
+     * @return \guyanyijiu\Database\Connections\Connection
      */
     protected function createReadWriteConnection(array $config)
     {
@@ -198,7 +180,7 @@ class ConnectionFactory
      * Create a connector instance based on the configuration.
      *
      * @param  array  $config
-     * @return \Illuminate\Database\Connectors\ConnectorInterface
+     * @return \guyanyijiu\Database\Connectors\Connector
      *
      * @throws \InvalidArgumentException
      */
@@ -207,10 +189,6 @@ class ConnectionFactory
         if (! isset($config['driver'])) {
             throw new InvalidArgumentException('A driver must be specified.');
         }
-
-//        if ($this->container->bound($key = "db.connector.{$config['driver']}")) {
-//            return $this->container->make($key);
-//        }
 
         switch ($config['driver']) {
             case 'mysql':
@@ -234,7 +212,7 @@ class ConnectionFactory
      * @param  string   $database
      * @param  string   $prefix
      * @param  array    $config
-     * @return \Illuminate\Database\Connection
+     * @return \guyanyijiu\Database\Connections\Connection
      *
      * @throws \InvalidArgumentException
      */

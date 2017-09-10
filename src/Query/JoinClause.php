@@ -23,17 +23,16 @@ class JoinClause extends Builder
     /**
      * The parent query builder instance.
      *
-     * @var \Illuminate\Database\Query\Builder
+     * @var \guyanyijiu\Database\Query\Builder
      */
     private $parentQuery;
 
     /**
      * Create a new join clause instance.
      *
-     * @param  \Illuminate\Database\Query\Builder $parentQuery
-     * @param  string  $type
-     * @param  string  $table
-     * @return void
+     * @param \guyanyijiu\Database\Query\Builder    $parentQuery
+     * @param  string                               $type
+     * @param  string                               $table
      */
     public function __construct(Builder $parentQuery, $type, $table)
     {
@@ -81,7 +80,7 @@ class JoinClause extends Builder
      * @param  \Closure|string  $first
      * @param  string|null  $operator
      * @param  string|null  $second
-     * @return \Illuminate\Database\Query\JoinClause
+     * @return \guyanyijiu\Database\Query\JoinClause
      */
     public function orOn($first, $operator = null, $second = null)
     {
@@ -91,7 +90,7 @@ class JoinClause extends Builder
     /**
      * Get a new instance of the join clause builder.
      *
-     * @return \Illuminate\Database\Query\JoinClause
+     * @return \guyanyijiu\Database\Query\JoinClause
      */
     public function newQuery()
     {

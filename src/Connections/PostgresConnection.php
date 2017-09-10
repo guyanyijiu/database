@@ -10,7 +10,7 @@ class PostgresConnection extends Connection
     /**
      * Get the default query grammar instance.
      *
-     * @return \Illuminate\Database\Query\Grammars\PostgresGrammar
+     * @return \guyanyijiu\Database\Query\Grammars\PostgresGrammar
      */
     protected function getDefaultQueryGrammar()
     {
@@ -20,7 +20,7 @@ class PostgresConnection extends Connection
     /**
      * Get the default post processor instance.
      *
-     * @return \Illuminate\Database\Query\Processors\PostgresProcessor
+     * @return \guyanyijiu\Database\Query\Processors\PostgresProcessor
      */
     protected function getDefaultPostProcessor()
     {

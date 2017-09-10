@@ -1,9 +1,9 @@
 <?php
 
-namespace Illuminate\Database;
+namespace guyanyijiu\Database;
 
 use PDOException;
-use Illuminate\Support\Str;
+use guyanyijiu\Support\Str;
 
 class QueryException extends PDOException
 {
