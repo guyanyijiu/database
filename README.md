@@ -13,28 +13,18 @@
 
 ```php
 use Pimple\Container;
-use guyanyijiu\Database\DatabaseManager;
-use guyanyijiu\Database\Connectors\ConnectionFactory;
-use guyanyijiu\Database\Model;
+use guyanyijiu\Database\DatabaseServiceProvider;
 
 $container = new Container();
 
-//需要注册 config 实例用来获取数据库配置
+//需要自己实现一个 config 实例用来获取数据库配置
 $container['config'] = function (){
     return new Config();
 };
 
-$container['db.factory'] = function (){
-    return new ConnectionFactory();
-};
-$container['db'] = function () use ($container){
-    return new DatabaseManager($container, $container['db.factory']);
-};
-//使用 Model
-Model::setConnectionResolver($container['db']);
+$container->register(new DatabaseServiceProvider());
 
 ```
-
 
 > `composer require pimple/pimple` 这里使用的容器类
 
