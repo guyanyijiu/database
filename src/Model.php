@@ -4,6 +4,7 @@ namespace guyanyijiu\Database;
 
 use BadMethodCallException;
 use guyanyijiu\Support\Str;
+use guyanyijiu\Database\Model\Builder;
 use guyanyijiu\Database\Query\Builder as QueryBuilder;
 use guyanyijiu\Database\ConnectionResolverInterface as Resolver;
 
@@ -173,6 +174,9 @@ abstract class Model
      */
     public static function resolveConnection($connection = null)
     {
+        if(is_null(static::$resolver)){
+            static::setConnectionResolver(container('db'));
+        }
         return static::$resolver->connection($connection);
     }
 
