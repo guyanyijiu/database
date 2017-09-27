@@ -133,7 +133,7 @@ class DatabaseManager implements ConnectionResolverInterface
         // To get the database connection configuration, we will just pull each of the
         // connection configurations and get the configurations for the given name.
         // If the configuration doesn't exist, we'll throw an exception and bail.
-        $connections = $this->app['config']['database.connections'];
+        $connections = $this->container['config']['database.connections'];
 
         if (is_null($config = Arr::get($connections, $name))) {
             throw new InvalidArgumentException("Database [$name] not configured.");
@@ -255,7 +255,7 @@ class DatabaseManager implements ConnectionResolverInterface
      */
     public function getDefaultConnection()
     {
-        return $this->app['config']['database.default'];
+        return $this->container['config']['database.default'];
     }
 
     /**
@@ -266,7 +266,7 @@ class DatabaseManager implements ConnectionResolverInterface
      */
     public function setDefaultConnection($name)
     {
-        $this->app['config']['database.default'] = $name;
+        $this->container['config']['database.default'] = $name;
     }
 
     /**
