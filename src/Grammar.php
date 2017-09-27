@@ -1,6 +1,8 @@
 <?php
 
-namespace guyanyijiu\Database\Query;
+namespace guyanyijiu\Database;
+
+use guyanyijiu\Database\Query\Expression;
 
 abstract class Grammar
 {

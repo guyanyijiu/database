@@ -1,6 +1,6 @@
 <?php
 
-namespace guyanyijiu\Database\Connections;
+namespace guyanyijiu\Database;
 
 use Closure;
 use Exception;

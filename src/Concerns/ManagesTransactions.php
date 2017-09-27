@@ -1,6 +1,6 @@
 <?php
 
-namespace guyanyijiu\Database\Traits;
+namespace guyanyijiu\Database\Concerns;
 
 use Closure;
 use Exception;

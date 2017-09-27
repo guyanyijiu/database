@@ -3,8 +3,8 @@
 namespace guyanyijiu\Database\Query\Processors;
 
 use Exception;
+use guyanyijiu\Database\Connection;
 use guyanyijiu\Database\Query\Builder;
-use guyanyijiu\Database\Connections\Connection;
 
 class SqlServerProcessor extends Processor
 {
@@ -35,7 +35,7 @@ class SqlServerProcessor extends Processor
     /**
      * Process an "insert get ID" query for ODBC.
      *
-     * @param  \guyanyijiu\Database\Connections\Connection  $connection
+     * @param  \guyanyijiu\Database\Connection  $connection
      * @return int
      * @throws \Exception
      */
@@ -63,7 +63,7 @@ class SqlServerProcessor extends Processor
     public function processColumnListing($results)
     {
         return array_map(function ($result) {
-            return with((object) $result)->name;
+            return ((object) $result)->name;
         }, $results);
     }
 }

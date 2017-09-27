@@ -30,9 +30,10 @@ class JoinClause extends Builder
     /**
      * Create a new join clause instance.
      *
-     * @param \guyanyijiu\Database\Query\Builder    $parentQuery
-     * @param  string                               $type
-     * @param  string                               $table
+     * @param  \guyanyijiu\Database\Query\Builder $parentQuery
+     * @param  string  $type
+     * @param  string  $table
+     * @return void
      */
     public function __construct(Builder $parentQuery, $type, $table)
     {

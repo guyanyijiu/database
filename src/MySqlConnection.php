@@ -1,6 +1,6 @@
 <?php
 
-namespace guyanyijiu\Database\Connections;
+namespace guyanyijiu\Database;
 
 use PDO;
 use guyanyijiu\Database\Query\Processors\MySqlProcessor;
@@ -17,7 +17,6 @@ class MySqlConnection extends Connection
     {
         return $this->withTablePrefix(new QueryGrammar);
     }
-
 
     /**
      * Get the default post processor instance.

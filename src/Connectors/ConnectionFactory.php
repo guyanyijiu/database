@@ -5,19 +5,21 @@ namespace guyanyijiu\Database\Connectors;
 use PDOException;
 use guyanyijiu\Support\Arr;
 use InvalidArgumentException;
-use guyanyijiu\Database\Connections\MySqlConnection;
-use guyanyijiu\Database\Connections\SQLiteConnection;
-use guyanyijiu\Database\Connections\PostgresConnection;
-use guyanyijiu\Database\Connections\SqlServerConnection;
+use guyanyijiu\Database\Connection;
+use guyanyijiu\Database\MySqlConnection;
+use guyanyijiu\Database\SQLiteConnection;
+use guyanyijiu\Database\PostgresConnection;
+use guyanyijiu\Database\SqlServerConnection;
 
 class ConnectionFactory
 {
+
     /**
      * Establish a PDO connection based on the configuration.
      *
      * @param  array   $config
      * @param  string  $name
-     * @return \guyanyijiu\Database\Connections\Connection
+     * @return \guyanyijiu\Database\Connection
      */
     public function make(array $config, $name = null)
     {
@@ -46,7 +48,7 @@ class ConnectionFactory
      * Create a single database connection instance.
      *
      * @param  array  $config
-     * @return \guyanyijiu\Database\Connections\Connection
+     * @return \guyanyijiu\Database\Connection
      */
     protected function createSingleConnection(array $config)
     {
@@ -61,7 +63,7 @@ class ConnectionFactory
      * Create a single database connection instance.
      *
      * @param  array  $config
-     * @return \guyanyijiu\Database\Connections\Connection
+     * @return \guyanyijiu\Database\Connection
      */
     protected function createReadWriteConnection(array $config)
     {
@@ -117,7 +119,7 @@ class ConnectionFactory
     protected function getReadWriteConfig(array $config, $type)
     {
         return isset($config[$type][0])
-                        ? $config[$type][array_rand($config[$type])]
+                        ? Arr::random($config[$type])
                         : $config[$type];
     }
 
@@ -141,6 +143,19 @@ class ConnectionFactory
      */
     protected function createPdoResolver(array $config)
     {
+        return array_key_exists('host', $config)
+                            ? $this->createPdoResolverWithHosts($config)
+                            : $this->createPdoResolverWithoutHosts($config);
+    }
+
+    /**
+     * Create a new Closure that resolves to a PDO instance with a specific host or an array of hosts.
+     *
+     * @param  array  $config
+     * @return \Closure
+     */
+    protected function createPdoResolverWithHosts(array $config)
+    {
         return function () use ($config) {
             foreach (Arr::shuffle($hosts = $this->parseHosts($config)) as $key => $host) {
                 $config['host'] = $host;
@@ -153,8 +168,6 @@ class ConnectionFactory
                     }
                 }
             }
-
-            throw $e;
         };
     }
 
@@ -166,7 +179,7 @@ class ConnectionFactory
      */
     protected function parseHosts(array $config)
     {
-        $hosts = array_wrap($config['host']);
+        $hosts = Arr::wrap($config['host']);
 
         if (empty($hosts)) {
             throw new InvalidArgumentException('Database hosts array is empty.');
@@ -175,12 +188,24 @@ class ConnectionFactory
         return $hosts;
     }
 
+    /**
+     * Create a new Closure that resolves to a PDO instance where there is no configured host.
+     *
+     * @param  array  $config
+     * @return \Closure
+     */
+    protected function createPdoResolverWithoutHosts(array $config)
+    {
+        return function () use ($config) {
+            return $this->createConnector($config)->connect($config);
+        };
+    }
 
     /**
      * Create a connector instance based on the configuration.
      *
      * @param  array  $config
-     * @return \guyanyijiu\Database\Connectors\Connector
+     * @return \guyanyijiu\Database\Connectors\ConnectorInterface
      *
      * @throws \InvalidArgumentException
      */
@@ -212,12 +237,16 @@ class ConnectionFactory
      * @param  string   $database
      * @param  string   $prefix
      * @param  array    $config
-     * @return \guyanyijiu\Database\Connections\Connection
+     * @return \guyanyijiu\Database\Connection
      *
      * @throws \InvalidArgumentException
      */
     protected function createConnection($driver, $connection, $database, $prefix = '', array $config = [])
     {
+        if ($resolver = Connection::getResolver($driver)) {
+            return $resolver($connection, $database, $prefix, $config);
+        }
+
         switch ($driver) {
             case 'mysql':
                 return new MySqlConnection($connection, $database, $prefix, $config);

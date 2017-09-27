@@ -1,6 +1,6 @@
 <?php
 
-namespace guyanyijiu\Database\Connections;
+namespace guyanyijiu\Database;
 
 use guyanyijiu\Database\Query\Processors\PostgresProcessor;
 use guyanyijiu\Database\Query\Grammars\PostgresGrammar as QueryGrammar;
@@ -26,5 +26,4 @@ class PostgresConnection extends Connection
     {
         return new PostgresProcessor;
     }
-
 }

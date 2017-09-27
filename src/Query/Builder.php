@@ -12,20 +12,21 @@ use guyanyijiu\Support\Collection;
 use guyanyijiu\Support\Traits\Macroable;
 use guyanyijiu\Support\Contracts\Arrayable;
 use guyanyijiu\Database\ConnectionInterface;
-use guyanyijiu\Database\Connections\Connection;
+use guyanyijiu\Database\Concerns\BuildsQueries;
 use guyanyijiu\Database\Query\Grammars\Grammar;
 use guyanyijiu\Database\Query\Processors\Processor;
+use guyanyijiu\Database\Model\Builder as ModelBuilder;
 
 class Builder
 {
-    use Macroable {
+    use BuildsQueries, Macroable {
         __call as macroCall;
     }
 
     /**
      * The database connection instance.
      *
-     * @var \guyanyijiu\Database\Connections\Connection
+     * @var \guyanyijiu\Database\Connection
      */
     public $connection;
 
@@ -97,7 +98,7 @@ class Builder
      *
      * @var array
      */
-    public $wheres;
+    public $wheres = [];
 
     /**
      * The groupings for the query.
@@ -175,7 +176,7 @@ class Builder
      * @var array
      */
     public $operators = [
-        '=', '<', '>', '<=', '>=', '<>', '!=',
+        '=', '<', '>', '<=', '>=', '<>', '!=', '<=>',
         'like', 'like binary', 'not like', 'between', 'ilike',
         '&', '|', '^', '<<', '>>',
         'rlike', 'regexp', 'not regexp',
@@ -190,29 +191,21 @@ class Builder
      */
     public $useWritePdo = false;
 
-    public $model = null;
-
     /**
      * Create a new query builder instance.
      *
-     * @param \guyanyijiu\Database\Connections\Connection     $connection
-     * @param \guyanyijiu\Database\Query\Grammars\Grammar     $grammar
-     * @param \guyanyijiu\Database\Query\Processors\Processor $processor
+     * @param  \guyanyijiu\Database\ConnectionInterface  $connection
+     * @param  \guyanyijiu\Database\Query\Grammars\Grammar  $grammar
+     * @param  \guyanyijiu\Database\Query\Processors\Processor  $processor
+     * @return void
      */
-    public function __construct(Connection $connection,
+    public function __construct(ConnectionInterface $connection,
                                 Grammar $grammar = null,
                                 Processor $processor = null)
     {
         $this->connection = $connection;
         $this->grammar = $grammar ?: $connection->getQueryGrammar();
         $this->processor = $processor ?: $connection->getPostProcessor();
-    }
-
-    public function setModel($model)
-    {
-        $this->model = $model;
-        $this->from = $this->model->getTable();
-        return $this;
     }
 
     /**
@@ -258,7 +251,7 @@ class Builder
     public function selectSub($query, $as)
     {
         // If the given query is a Closure, we will execute it while passing in a new
-        // query instance ot the Closure. This will give the developer a chance to
+        // query instance to the Closure. This will give the developer a chance to
         // format and work with the query before we cast it to a raw SQL string.
         if ($query instanceof Closure) {
             $callback = $query;
@@ -285,6 +278,8 @@ class Builder
     protected function parseSubSelect($query)
     {
         if ($query instanceof self) {
+            $query->columns = [$query->columns[0]];
+
             return [$query->toSql(), $query->getBindings()];
         } elseif (is_string($query)) {
             return [$query, []];
@@ -465,27 +460,6 @@ class Builder
     }
 
     /**
-     * Apply the callback's query changes if the given "value" is true.
-     *
-     * @param  bool  $value
-     * @param  \Closure  $callback
-     * @param  \Closure  $default
-     * @return \guyanyijiu\Database\Query\Builder
-     */
-    public function when($value, $callback, $default = null)
-    {
-        $builder = $this;
-
-        if ($value) {
-            $builder = call_user_func($callback, $builder);
-        } elseif ($default) {
-            $builder = call_user_func($default, $builder);
-        }
-
-        return $builder;
-    }
-
-    /**
      * Merge an array of where clauses and bindings.
      *
      * @param  array  $wheres
@@ -494,7 +468,7 @@ class Builder
      */
     public function mergeWheres($wheres, $bindings)
     {
-        $this->wheres = array_merge((array) $this->wheres, (array) $wheres);
+        $this->wheres = array_merge($this->wheres, (array) $wheres);
 
         $this->bindings['where'] = array_values(
             array_merge($this->bindings['where'], (array) $bindings)
@@ -551,7 +525,7 @@ class Builder
         // where null clause to the query. So, we will allow a short-cut here to
         // that method for convenience so the developer doesn't have to check.
         if (is_null($value)) {
-            return $this->whereNull($column, $boolean, $operator != '=');
+            return $this->whereNull($column, $boolean, $operator !== '=');
         }
 
         // If the column is making a JSON reference we'll check to see if the value
@@ -587,13 +561,12 @@ class Builder
      */
     protected function addArrayOfWheres($column, $boolean, $method = 'where')
     {
-        return $this->whereNested(function ($query) use ($column, $method) {
+        return $this->whereNested(function ($query) use ($column, $method, $boolean) {
             foreach ($column as $key => $value) {
                 if (is_numeric($key) && is_array($value)) {
-                    call_user_func_array([$query, $method], array_values($value));
-//                    $query->{$method}(...array_values($value));
+                    $query->{$method}(...array_values($value));
                 } else {
-                    $query->$method($key, '=', $value);
+                    $query->$method($key, '=', $value, $boolean);
                 }
             }
         }, $boolean);
@@ -650,7 +623,7 @@ class Builder
     /**
      * Add an "or where" clause to the query.
      *
-     * @param  \Closure|string  $column
+     * @param  string|array|\Closure  $column
      * @param  string  $operator
      * @param  mixed   $value
      * @return \guyanyijiu\Database\Query\Builder|static
@@ -731,10 +704,10 @@ class Builder
      * Add a raw or where clause to the query.
      *
      * @param  string  $sql
-     * @param  array   $bindings
+     * @param  mixed   $bindings
      * @return \guyanyijiu\Database\Query\Builder|static
      */
-    public function orWhereRaw($sql, array $bindings = [])
+    public function orWhereRaw($sql, $bindings = [])
     {
         return $this->whereRaw($sql, $bindings, 'or');
     }
@@ -752,10 +725,14 @@ class Builder
     {
         $type = $not ? 'NotIn' : 'In';
 
+        if ($values instanceof ModelBuilder) {
+            $values = $values->getQuery();
+        }
+
         // If the value is a query builder instance we will assume the developer wants to
         // look for any values that exists within this given query. So we will add the
         // query accordingly so that this query is properly executed when it is run.
-        if ($values instanceof static) {
+        if ($values instanceof self) {
             return $this->whereInExistingQuery(
                 $column, $values, $boolean, $not
             );
@@ -1281,7 +1258,7 @@ class Builder
             // If the segment is not a boolean connector, we can assume it is a column's name
             // and we will add it to the query as a new constraint as a where clause, then
             // we can keep iterating through the dynamic method string's segments again.
-            if ($segment != 'And' && $segment != 'Or') {
+            if ($segment !== 'And' && $segment !== 'Or') {
                 $this->addDynamic($segment, $connector, $parameters, $index);
 
                 $index++;
@@ -1323,24 +1300,12 @@ class Builder
      * @param  array  ...$groups
      * @return $this
      */
-//    public function groupBy(...$groups)
-//    {
-//        foreach ($groups as $group) {
-//            $this->groups = array_merge(
-//                (array) $this->groups,
-//                array_wrap($group)
-//            );
-//        }
-//
-//        return $this;
-//    }
-    public function groupBy()
+    public function groupBy(...$groups)
     {
-        $groups = func_get_args();
         foreach ($groups as $group) {
             $this->groups = array_merge(
                 (array) $this->groups,
-                array_wrap($group)
+                Arr::wrap($group)
             );
         }
 
@@ -1442,6 +1407,17 @@ class Builder
         ];
 
         return $this;
+    }
+
+    /**
+     * Add a descending "order by" clause to the query.
+     *
+     * @param  string  $column
+     * @return $this
+     */
+    public function orderByDesc($column)
+    {
+        return $this->orderBy($column, 'desc');
     }
 
     /**
@@ -1579,7 +1555,7 @@ class Builder
     }
 
     /**
-     * Get an array orders with all orders for an given column removed.
+     * Get an array with all orders with a given column removed.
      *
      * @param  string  $column
      * @return array
@@ -1588,7 +1564,8 @@ class Builder
     {
         return Collection::make($this->orders)
                     ->reject(function ($order) use ($column) {
-                        return $order['column'] === $column;
+                        return isset($order['column'])
+                               ? $order['column'] === $column : false;
                     })->values()->all();
     }
 
@@ -1696,17 +1673,6 @@ class Builder
     }
 
     /**
-     * Execute the query and get the first result.
-     *
-     * @param  array   $columns
-     * @return \stdClass|array|null
-     */
-    public function first($columns = ['*'])
-    {
-        return $this->take(1)->get($columns)->first();
-    }
-
-    /**
      * Execute the query as a "select" statement.
      *
      * @param  array  $columns
@@ -1770,44 +1736,6 @@ class Builder
     }
 
     /**
-     * Chunk the results of the query.
-     *
-     * @param  int  $count
-     * @param  callable  $callback
-     * @return bool
-     */
-    public function chunk($count, callable $callback)
-    {
-        $this->enforceOrderBy();
-
-        $page = 1;
-
-        do {
-            // We'll execute the query for the given page and get the results. If there are
-            // no results we can just break and return from here. When there are results
-            // we will call the callback with the current chunk of these results here.
-            $results = $this->forPage($page, $count)->get();
-
-            $countResults = $results->count();
-
-            if ($countResults == 0) {
-                break;
-            }
-
-            // On each chunk result set, we will pass them to the callback and then let the
-            // developer take care of everything within the callback, which allows us to
-            // keep the memory low for spinning through large result sets for working.
-            if ($callback($results) === false) {
-                return false;
-            }
-
-            $page++;
-        } while ($countResults == $count);
-
-        return true;
-    }
-
-    /**
      * Chunk the results of a query by comparing numeric IDs.
      *
      * @param  int  $count
@@ -1844,6 +1772,8 @@ class Builder
             }
 
             $lastId = $results->last()->{$alias};
+
+            unset($results);
         } while ($countResults == $count);
 
         return true;
@@ -1861,24 +1791,6 @@ class Builder
         if (empty($this->orders) && empty($this->unionOrders)) {
             throw new RuntimeException('You must specify an orderBy clause when using this function.');
         }
-    }
-
-    /**
-     * Execute a callback over each item while chunking.
-     *
-     * @param  callable  $callback
-     * @param  int  $count
-     * @return bool
-     */
-    public function each(callable $callback, $count = 1000)
-    {
-        return $this->chunk($count, function ($results) use ($callback) {
-            foreach ($results as $key => $value) {
-                if ($callback($value, $key) === false) {
-                    return false;
-                }
-            }
-        });
     }
 
     /**
@@ -1955,7 +1867,7 @@ class Builder
      */
     public function count($columns = '*')
     {
-        return (int) $this->aggregate(__FUNCTION__, array_wrap($columns));
+        return (int) $this->aggregate(__FUNCTION__, Arr::wrap($columns));
     }
 
     /**
@@ -2073,6 +1985,12 @@ class Builder
     protected function setAggregate($function, $columns)
     {
         $this->aggregate = compact('function', 'columns');
+
+        if (empty($this->groups)) {
+            $this->orders = null;
+
+            $this->bindings['order'] = [];
+        }
 
         return $this;
     }
@@ -2351,7 +2269,7 @@ class Builder
     /**
      * Get the database connection instance.
      *
-     * @return \guyanyijiu\Database\Connections\Connection
+     * @return \guyanyijiu\Database\ConnectionInterface
      */
     public function getConnection()
     {

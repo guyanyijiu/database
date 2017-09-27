@@ -6,10 +6,12 @@ use PDO;
 use guyanyijiu\Support\Arr;
 use guyanyijiu\Support\Str;
 use InvalidArgumentException;
-use guyanyijiu\Database\Connections\Connection;
 use guyanyijiu\Database\Connectors\ConnectionFactory;
 
-class DatabaseManager
+/**
+ * @mixin \guyanyijiu\Database\Connection
+ */
+class DatabaseManager implements ConnectionResolverInterface
 {
     /**
      * 容器实例
@@ -19,47 +21,43 @@ class DatabaseManager
     protected $container;
 
     /**
-     * 数据库连接工厂实例
+     * The database connection factory instance.
      *
      * @var \guyanyijiu\Database\Connectors\ConnectionFactory
      */
     protected $factory;
 
     /**
-     * 有效的连接
+     * The active connection instances.
      *
      * @var array
      */
     protected $connections = [];
 
     /**
-     * 当前实例
+     * The custom connection resolvers.
      *
-     * @var
+     * @var array
      */
-    protected static $instance;
+    protected $extensions = [];
 
     /**
-     * DatabaseManager constructor.
+     * Create a new database manager instance.
      *
-     * @param                                                   $container
-     * @param \guyanyijiu\Database\Connectors\ConnectionFactory $factory
+     * @param                                                    $container
+     * @param  \guyanyijiu\Database\Connectors\ConnectionFactory $factory
      */
     public function __construct($container, ConnectionFactory $factory)
     {
         $this->container = $container;
         $this->factory = $factory;
-        static::$instance = $this;
     }
 
     /**
-     * 获取一个数据库连接
+     * Get a database connection instance.
      *
-     * @Author   liuchao
-     *
-     * @param null $name
-     *
-     * @return mixed
+     * @param  string  $name
+     * @return \guyanyijiu\Database\Connection
      */
     public function connection($name = null)
     {
@@ -72,7 +70,7 @@ class DatabaseManager
         // set the "fetch mode" for PDO which determines the query return types.
         if (! isset($this->connections[$name])) {
             $this->connections[$name] = $this->configure(
-                $connection = $this->makeConnection($database), $type
+                $this->makeConnection($database), $type
             );
         }
 
@@ -97,11 +95,25 @@ class DatabaseManager
      * Make the database connection instance.
      *
      * @param  string  $name
-     * @return \guyanyijiu\Database\Connections\Connection
+     * @return \guyanyijiu\Database\Connection
      */
     protected function makeConnection($name)
     {
         $config = $this->configuration($name);
+
+        // First we will check by the connection name to see if an extension has been
+        // registered specifically for that connection. If it has we will call the
+        // Closure and pass it the config allowing it to resolve the connection.
+        if (isset($this->extensions[$name])) {
+            return call_user_func($this->extensions[$name], $config, $name);
+        }
+
+        // Next we will check to see if an extension has been registered for a driver
+        // and will call the Closure if so, which allows us to have a more generic
+        // resolver for the drivers themselves which applies to all connections.
+        if (isset($this->extensions[$driver = $config['driver']])) {
+            return call_user_func($this->extensions[$driver], $config, $name);
+        }
 
         return $this->factory->make($config, $name);
     }
@@ -121,7 +133,7 @@ class DatabaseManager
         // To get the database connection configuration, we will just pull each of the
         // connection configurations and get the configurations for the given name.
         // If the configuration doesn't exist, we'll throw an exception and bail.
-        $connections = $this->container['config']['database.connections'];
+        $connections = $this->app['config']['database.connections'];
 
         if (is_null($config = Arr::get($connections, $name))) {
             throw new InvalidArgumentException("Database [$name] not configured.");
@@ -133,13 +145,20 @@ class DatabaseManager
     /**
      * Prepare the database connection instance.
      *
-     * @param  \guyanyijiu\Database\Connections\Connection  $connection
+     * @param  \guyanyijiu\Database\Connection  $connection
      * @param  string  $type
-     * @return \guyanyijiu\Database\Connections\Connection
+     * @return \guyanyijiu\Database\Connection
      */
     protected function configure(Connection $connection, $type)
     {
         $connection = $this->setPdoForType($connection, $type);
+
+        // First we'll set the fetch mode and a few other dependencies of the database
+        // connection. This method basically just configures and prepares it to get
+        // used by the application. Once we're finished we'll return it back out.
+//        if ($this->app->bound('events')) {
+//            $connection->setEventDispatcher($this->app['events']);
+//        }
 
         // Here we'll set a reconnector callback. This reconnector can be any callable
         // so we will set a Closure to reconnect from this manager with the name of
@@ -154,9 +173,9 @@ class DatabaseManager
     /**
      * Prepare the read / write mode for database connection instance.
      *
-     * @param  \guyanyijiu\Database\Connections\Connection  $connection
+     * @param  \guyanyijiu\Database\Connection  $connection
      * @param  string  $type
-     * @return \guyanyijiu\Database\Connections\Connection
+     * @return \guyanyijiu\Database\Connection
      */
     protected function setPdoForType(Connection $connection, $type = null)
     {
@@ -177,6 +196,8 @@ class DatabaseManager
      */
     public function purge($name = null)
     {
+        $name = $name ?: $this->getDefaultConnection();
+
         $this->disconnect($name);
 
         unset($this->connections[$name]);
@@ -199,7 +220,7 @@ class DatabaseManager
      * Reconnect to the given database.
      *
      * @param  string  $name
-     * @return \guyanyijiu\Database\Connections\Connection
+     * @return \guyanyijiu\Database\Connection
      */
     public function reconnect($name = null)
     {
@@ -216,7 +237,7 @@ class DatabaseManager
      * Refresh the PDO connections on a given connection.
      *
      * @param  string  $name
-     * @return \guyanyijiu\Database\Connections\Connection
+     * @return \guyanyijiu\Database\Connection
      */
     protected function refreshPdoConnections($name)
     {
@@ -234,7 +255,7 @@ class DatabaseManager
      */
     public function getDefaultConnection()
     {
-        return $this->container['config']['database.default'];
+        return $this->app['config']['database.default'];
     }
 
     /**
@@ -245,7 +266,7 @@ class DatabaseManager
      */
     public function setDefaultConnection($name)
     {
-        $this->container['config']['database.default'] = $name;
+        $this->app['config']['database.default'] = $name;
     }
 
     /**
@@ -272,6 +293,18 @@ class DatabaseManager
     }
 
     /**
+     * Register an extension connection resolver.
+     *
+     * @param  string    $name
+     * @param  callable  $resolver
+     * @return void
+     */
+    public function extend($name, callable $resolver)
+    {
+        $this->extensions[$name] = $resolver;
+    }
+
+    /**
      * Return all of the created connections.
      *
      * @return array
@@ -290,18 +323,6 @@ class DatabaseManager
      */
     public function __call($method, $parameters)
     {
-        return call_user_func_array([$this->connection(), $method], $parameters);
-    }
-
-    /**
-     * Dynamically pass methods to the default connection.
-     *
-     * @param $method
-     * @param $parameters
-     * @return mixed
-     */
-    public static function __callStatic($method, $parameters)
-    {
-        return call_user_func_array([static::$instance->connection(), $method], $parameters);
+        return $this->connection()->$method(...$parameters);
     }
 }

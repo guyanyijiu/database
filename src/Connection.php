@@ -1,7 +1,6 @@
 <?php
 
-namespace guyanyijiu\Database\Connections;
-
+namespace guyanyijiu\Database;
 
 use PDO;
 use Closure;
@@ -10,33 +9,28 @@ use PDOStatement;
 use LogicException;
 use DateTimeInterface;
 use guyanyijiu\Support\Arr;
-use guyanyijiu\Database\QueryException;
-use guyanyijiu\Database\Query\Grammar;
 use guyanyijiu\Database\Query\Expression;
 use guyanyijiu\Database\Query\Processors\Processor;
 use guyanyijiu\Database\Query\Builder as QueryBuilder;
 use guyanyijiu\Database\Query\Grammars\Grammar as QueryGrammar;
-use guyanyijiu\Database\Traits\DetectsDeadlocks;
-use guyanyijiu\Database\Traits\DetectsLostConnections;
-use guyanyijiu\Database\Traits\ManagesTransactions;
 
-class Connection
+class Connection implements ConnectionInterface
 {
     use DetectsDeadlocks,
         DetectsLostConnections,
-        ManagesTransactions;
+        Concerns\ManagesTransactions;
 
     /**
      * The active PDO connection.
      *
-     * @var PDO
+     * @var \PDO|\Closure
      */
     protected $pdo;
 
     /**
      * The active PDO connection used for reads.
      *
-     * @var PDO
+     * @var \PDO|\Closure
      */
     protected $readPdo;
 
@@ -97,6 +91,13 @@ class Connection
     protected $transactions = 0;
 
     /**
+     * Indicates if changes have been made to the database.
+     *
+     * @var int
+     */
+    protected $recordsModified = false;
+
+    /**
      * All of the queries run against the connection.
      *
      * @var array
@@ -116,6 +117,13 @@ class Connection
      * @var bool
      */
     protected $pretending = false;
+
+    /**
+     * The connection resolvers.
+     *
+     * @var array
+     */
+    protected static $resolvers = [];
 
     /**
      * Create a new database connection instance.
@@ -382,6 +390,8 @@ class Connection
 
             $this->bindValues($statement, $this->prepareBindings($bindings));
 
+            $this->recordsHaveBeenModified();
+
             return $statement->execute();
         });
     }
@@ -409,7 +419,11 @@ class Connection
 
             $statement->execute();
 
-            return $statement->rowCount();
+            $this->recordsHaveBeenModified(
+                ($count = $statement->rowCount()) > 0
+            );
+
+            return $count;
         });
     }
 
@@ -426,7 +440,11 @@ class Connection
                 return true;
             }
 
-            return (bool) $this->getPdo()->exec($query);
+            $this->recordsHaveBeenModified(
+                $change = ($this->getPdo()->exec($query) === false ? false : true)
+            );
+
+            return $change;
         });
     }
 
@@ -622,6 +640,7 @@ class Connection
      * @param  array  $bindings
      * @param  \Closure  $callback
      * @return mixed
+     * @throws \Exception
      */
     protected function handleQueryException($e, $query, $bindings, Closure $callback)
     {
@@ -706,6 +725,19 @@ class Connection
     }
 
     /**
+     * Indicate if any records have been modified.
+     *
+     * @param  bool  $value
+     * @return void
+     */
+    public function recordsHaveBeenModified($value = true)
+    {
+        if (! $this->recordsModified) {
+            $this->recordsModified = $value;
+        }
+    }
+
+    /**
      * Get the current PDO connection.
      *
      * @return \PDO
@@ -726,7 +758,11 @@ class Connection
      */
     public function getReadPdo()
     {
-        if ($this->transactions >= 1) {
+        if ($this->transactions > 0) {
+            return $this->getPdo();
+        }
+
+        if ($this->getConfig('sticky') && $this->recordsModified) {
             return $this->getPdo();
         }
 
@@ -740,7 +776,7 @@ class Connection
     /**
      * Set the PDO connection.
      *
-     * @param  \PDO|null  $pdo
+     * @param  \PDO|\Closure|null  $pdo
      * @return $this
      */
     public function setPdo($pdo)
@@ -755,7 +791,7 @@ class Connection
     /**
      * Set the PDO connection used for reading.
      *
-     * @param  \PDO|null  $pdo
+     * @param  \PDO||\Closure|null  $pdo
      * @return $this
      */
     public function setReadPdo($pdo)
@@ -791,10 +827,10 @@ class Connection
     /**
      * Get an option from the configuration options.
      *
-     * @param  string  $option
+     * @param  string|null  $option
      * @return mixed
      */
-    public function getConfig($option)
+    public function getConfig($option = null)
     {
         return Arr::get($this->config, $option);
     }
@@ -829,7 +865,6 @@ class Connection
     {
         $this->queryGrammar = $grammar;
     }
-
 
     /**
      * Get the query post processor used by the connection.
@@ -959,8 +994,8 @@ class Connection
     /**
      * Set the table prefix and return the grammar.
      *
-     * @param  \guyanyijiu\Database\Query\Grammar  $grammar
-     * @return \guyanyijiu\Database\Query\Grammar
+     * @param  \guyanyijiu\Database\Grammar  $grammar
+     * @return \guyanyijiu\Database\Grammar
      */
     public function withTablePrefix(Grammar $grammar)
     {
@@ -969,4 +1004,26 @@ class Connection
         return $grammar;
     }
 
+    /**
+     * Register a connection resolver.
+     *
+     * @param  string  $driver
+     * @param  \Closure  $callback
+     * @return void
+     */
+    public static function resolverFor($driver, Closure $callback)
+    {
+        static::$resolvers[$driver] = $callback;
+    }
+
+    /**
+     * Get the connection resolver for the given driver.
+     *
+     * @param  string  $driver
+     * @return mixed
+     */
+    public static function getResolver($driver)
+    {
+        return static::$resolvers[$driver] ?? null;
+    }
 }

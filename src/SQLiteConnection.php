@@ -1,6 +1,6 @@
 <?php
 
-namespace guyanyijiu\Database\Connections;
+namespace guyanyijiu\Database;
 
 use guyanyijiu\Database\Query\Processors\SQLiteProcessor;
 use guyanyijiu\Database\Query\Grammars\SQLiteGrammar as QueryGrammar;

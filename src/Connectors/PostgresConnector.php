@@ -4,7 +4,7 @@ namespace guyanyijiu\Database\Connectors;
 
 use PDO;
 
-class PostgresConnector extends Connector
+class PostgresConnector extends Connector implements ConnectorInterface
 {
     /**
      * The default PDO connection options.

@@ -5,7 +5,7 @@
 1. 支持 Illuminate\Database 的所有查询构造器语法
 2. 去除了schema event 功能，简化了类调用
 3. Model类不再作为 ORM 模型，只有和查询构造器一样的功能
-4. 兼容PHP5.5
+4. 需要 PHP >= 7.0
 
 ### 用法
 

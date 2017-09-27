@@ -4,7 +4,7 @@ namespace guyanyijiu\Database\Connectors;
 
 use PDO;
 
-class MySqlConnector extends Connector
+class MySqlConnector extends Connector implements ConnectorInterface
 {
     /**
      * Establish a database connection.
@@ -65,7 +65,7 @@ class MySqlConnector extends Connector
      */
     protected function getCollation(array $config)
     {
-        return ! is_null($config['collation']) ? " collate '{$config['collation']}'" : '';
+        return isset($config['collation']) ? " collate '{$config['collation']}'" : '';
     }
 
     /**
@@ -92,11 +92,46 @@ class MySqlConnector extends Connector
      */
     protected function getDsn(array $config)
     {
+        return $this->hasSocket($config)
+                            ? $this->getSocketDsn($config)
+                            : $this->getHostDsn($config);
+    }
+
+    /**
+     * Determine if the given configuration array has a UNIX socket value.
+     *
+     * @param  array  $config
+     * @return bool
+     */
+    protected function hasSocket(array $config)
+    {
+        return isset($config['unix_socket']) && ! empty($config['unix_socket']);
+    }
+
+    /**
+     * Get the DSN string for a socket configuration.
+     *
+     * @param  array  $config
+     * @return string
+     */
+    protected function getSocketDsn(array $config)
+    {
+        return "mysql:unix_socket={$config['unix_socket']};dbname={$config['database']}";
+    }
+
+    /**
+     * Get the DSN string for a host / port configuration.
+     *
+     * @param  array  $config
+     * @return string
+     */
+    protected function getHostDsn(array $config)
+    {
         extract($config, EXTR_SKIP);
 
         return isset($port)
-            ? "mysql:host={$host};port={$port};dbname={$database}"
-            : "mysql:host={$host};dbname={$database}";
+                    ? "mysql:host={$host};port={$port};dbname={$database}"
+                    : "mysql:host={$host};dbname={$database}";
     }
 
     /**

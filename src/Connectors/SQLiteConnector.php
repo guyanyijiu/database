@@ -4,7 +4,7 @@ namespace guyanyijiu\Database\Connectors;
 
 use InvalidArgumentException;
 
-class SQLiteConnector extends Connector
+class SQLiteConnector extends Connector implements ConnectorInterface
 {
     /**
      * Establish a database connection.

@@ -5,7 +5,7 @@ namespace guyanyijiu\Database\Connectors;
 use PDO;
 use guyanyijiu\Support\Arr;
 
-class SqlServerConnector extends Connector
+class SqlServerConnector extends Connector implements ConnectorInterface
 {
     /**
      * The PDO connection options.
@@ -61,7 +61,7 @@ class SqlServerConnector extends Connector
     protected function prefersOdbc(array $config)
     {
         return in_array('odbc', $this->getAvailableDrivers()) &&
-               array_get($config, 'odbc') === true;
+               ($config['odbc'] ?? null) === true;
     }
 
     /**
@@ -116,6 +116,18 @@ class SqlServerConnector extends Connector
 
         if (isset($config['appname'])) {
             $arguments['APP'] = $config['appname'];
+        }
+
+        if (isset($config['encrypt'])) {
+            $arguments['Encrypt'] = $config['encrypt'];
+        }
+
+        if (isset($config['trust_server_certificate'])) {
+            $arguments['TrustServerCertificate'] = $config['trust_server_certificate'];
+        }
+
+        if (isset($config['multiple_active_result_sets']) && $config['multiple_active_result_sets'] === false) {
+            $arguments['MultipleActiveResultSets'] = 'false';
         }
 
         return $this->buildConnectString('sqlsrv', $arguments);

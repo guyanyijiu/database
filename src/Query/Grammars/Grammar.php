@@ -5,7 +5,7 @@ namespace guyanyijiu\Database\Query\Grammars;
 use guyanyijiu\Support\Arr;
 use guyanyijiu\Database\Query\Builder;
 use guyanyijiu\Database\Query\JoinClause;
-use guyanyijiu\Database\Query\Grammar as BaseGrammar;
+use guyanyijiu\Database\Grammar as BaseGrammar;
 
 class Grammar extends BaseGrammar
 {

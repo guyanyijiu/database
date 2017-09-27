@@ -1,6 +1,6 @@
 <?php
 
-namespace guyanyijiu\Database\Traits;
+namespace guyanyijiu\Database;
 
 use Exception;
 use guyanyijiu\Support\Str;
@@ -21,8 +21,11 @@ trait DetectsDeadlocks
             'Deadlock found when trying to get lock',
             'deadlock detected',
             'The database file is locked',
+            'database is locked',
+            'database table is locked',
             'A table in the database is locked',
             'has been chosen as the deadlock victim',
+            'Lock wait timeout exceeded; try restarting transaction',
         ]);
     }
 }

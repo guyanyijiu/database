@@ -1,6 +1,6 @@
 <?php
 
-namespace guyanyijiu\Database\Traits;
+namespace guyanyijiu\Database;
 
 use Exception;
 use guyanyijiu\Support\Str;
@@ -28,6 +28,8 @@ trait DetectsLostConnections
             'SSL connection has been closed unexpectedly',
             'Error writing data to the connection',
             'Resource deadlock avoided',
+            'Transaction() on null',
+            'child connection forced to terminate due to client_idle_limit',
         ]);
     }
 }

@@ -2,89 +2,141 @@
 
 namespace guyanyijiu\Database;
 
+use BadMethodCallException;
 use guyanyijiu\Support\Str;
-use guyanyijiu\Database\Query\Builder;
+use guyanyijiu\Database\Model\Builder;
+use guyanyijiu\Database\Query\Builder as QueryBuilder;
+use guyanyijiu\Database\ConnectionResolverInterface as Resolver;
 
+/**
+ * @mixin \guyanyijiu\Database\Model\Builder
+ * @mixin \guyanyijiu\Database\Query\Builder
+ */
 abstract class Model
 {
 
     /**
-     * 当前连接名
+     * The connection name for the model.
      *
-     * @var null
+     * @var string
      */
     protected $connection;
 
     /**
-     * 当前model的表名
+     * The table associated with the model.
      *
-     * @var null
+     * @var string
      */
     protected $table;
 
     /**
-     * 是否支持自动更新时间字段
+     * 是否使用 创建/修改 时间字段
      *
      * @var bool
      */
-    protected $timestamps = false;
+    protected $timestamps = true;
 
     /**
-     * 时间字段格式
+     * 创建/修改 时间字段的时间格式
      *
      * @var
      */
     protected $dateFormat;
 
     /**
-     * 数据库连接解析类实例
+     * The connection resolver instance.
      *
-     * @var
+     * @var \guyanyijiu\Database\ConnectionResolverInterface
      */
     protected static $resolver;
 
     /**
-     * 创建时间字段名
+     * The array of booted models.
+     *
+     * @var array
+     */
+    protected static $booted = [];
+
+    /**
+     * The name of the "created at" column.
+     *
+     * @var string
      */
     const CREATED_AT = 'ctime';
 
     /**
-     * 修改时间字段名
+     * The name of the "updated at" column.
+     *
+     * @var string
      */
     const UPDATED_AT = 'utime';
 
     /**
-     * Model constructor.
+     * Create a new Model model instance.
      *
-     * @param null $connection
-     * @param null $table
+     * @param  array  $attributes
+     * @return void
      */
-    public function __construct($connection = null, $table = null){
-        if(!is_null($connection)){
-            $this->connection = $connection;
-        }
-        if(!is_null($table)){
-            $this->table = $table;
+    public function __construct(array $attributes = [])
+    {
+        $this->bootIfNotBooted();
+
+    }
+
+    /**
+     * Check if the model needs to be booted and if so, do it.
+     *
+     * @return void
+     */
+    protected function bootIfNotBooted()
+    {
+        if (! isset(static::$booted[static::class])) {
+            static::$booted[static::class] = true;
         }
     }
 
     /**
-     * 生成新的查询构造器实例
+     * Begin querying the model.
      *
-     * @Author   liuchao
-     * @return \guyanyijiu\Database\Query\Builder
+     * @return \guyanyijiu\Database\Model\Builder
      */
-    public function newQuery(){
-        $builder = new Builder($this->getConnection());
+    public static function query()
+    {
+        return (new static)->newQuery();
+    }
+
+    /**
+     * Get a new query builder for the model's table.
+     *
+     * @return \guyanyijiu\Database\Model\Builder
+     */
+    public function newQuery()
+    {
+        $builder = new Builder($this->newBaseQueryBuilder());
+
         $builder->setModel($this);
+
         return $builder;
     }
 
     /**
-     * 获取当前数据库连接
+     * Get a new query builder instance for the connection.
      *
-     * @Author   liuchao
-     * @return \guyanyijiu\Database\Connections\Connection
+     * @return \guyanyijiu\Database\Query\Builder
+     */
+    protected function newBaseQueryBuilder()
+    {
+        $connection = $this->getConnection();
+
+        return new QueryBuilder(
+            $connection, $connection->getQueryGrammar(), $connection->getPostProcessor()
+        );
+    }
+
+    /**
+     * Get the database connection for the model.
+     *
+     * @return \guyanyijiu\Database\Connection
      */
     public function getConnection()
     {
@@ -92,10 +144,9 @@ abstract class Model
     }
 
     /**
-     * 获取当前数据库连接名
+     * Get the current connection name for the model.
      *
-     * @Author   liuchao
-     * @return null
+     * @return string
      */
     public function getConnectionName()
     {
@@ -103,12 +154,9 @@ abstract class Model
     }
 
     /**
-     * 设置当前数据库连接名
+     * Set the connection associated with the model.
      *
-     * @Author   liuchao
-     *
-     * @param $name
-     *
+     * @param  string  $name
      * @return $this
      */
     public function setConnection($name)
@@ -119,36 +167,54 @@ abstract class Model
     }
 
     /**
-     * 生成一个新的数据库连接实例
+     * Resolve a connection instance.
      *
-     * @Author   liuchao
-     *
-     * @param null $connection
-     *
-     * @return mixed
+     * @param  string|null  $connection
+     * @return \guyanyijiu\Database\Connection
      */
     public static function resolveConnection($connection = null)
     {
+        if(is_null(static::$resolver)){
+            static::setConnectionResolver(container('db'));
+        }
         return static::$resolver->connection($connection);
     }
 
     /**
-     * 设置数据库连接解析类实例
+     * Get the connection resolver instance.
      *
-     * @Author   liuchao
-     *
-     * @param $resolver
+     * @return \guyanyijiu\Database\ConnectionResolverInterface
      */
-    public static function setConnectionResolver($resolver)
+    public static function getConnectionResolver()
+    {
+        return static::$resolver;
+    }
+
+    /**
+     * Set the connection resolver instance.
+     *
+     * @param  \guyanyijiu\Database\ConnectionResolverInterface  $resolver
+     * @return void
+     */
+    public static function setConnectionResolver(Resolver $resolver)
     {
         static::$resolver = $resolver;
     }
 
     /**
-     * 获取当前model表名
+     * Unset the connection resolver for models.
      *
-     * @Author   liuchao
-     * @return mixed|null
+     * @return void
+     */
+    public static function unsetConnectionResolver()
+    {
+        static::$resolver = null;
+    }
+
+    /**
+     * Get the table associated with the model.
+     *
+     * @return string
      */
     public function getTable()
     {
@@ -160,12 +226,9 @@ abstract class Model
     }
 
     /**
-     * 设置当前model表名
+     * Set the table associated with the model.
      *
-     * @Author   liuchao
-     *
-     * @param $table
-     *
+     * @param  string  $table
      * @return $this
      */
     public function setTable($table)
@@ -175,39 +238,77 @@ abstract class Model
         return $this;
     }
 
+    /**
+     * Determine if the model uses timestamps.
+     *
+     * @return bool
+     */
+    public function usesTimestamps()
+    {
+        return $this->timestamps;
+    }
 
     /**
-     * 代理方法调用
+     * Get the name of the "created at" column.
      *
-     * @Author   liuchao
+     * @return string
+     */
+    public function getCreatedAtColumn()
+    {
+        return static::CREATED_AT;
+    }
+
+    /**
+     * Get the name of the "updated at" column.
      *
-     * @param $method
-     * @param $parameters
+     * @return string
+     */
+    public function getUpdatedAtColumn()
+    {
+        return static::UPDATED_AT;
+    }
+
+    /**
+     * Get a fresh timestamp for the model.
      *
+     * @return string
+     */
+    public function freshTimestampString()
+    {
+        if(!is_null($this->dateFormat)){
+            return date($this->dateFormat);
+        }
+        return time();
+    }
+
+    /**
+     * Handle dynamic method calls into the model.
+     *
+     * @param  string  $method
+     * @param  array  $parameters
      * @return mixed
      */
     public function __call($method, $parameters)
     {
-        if (in_array($method, ['increment', 'decrement'])) {
-            return call_user_func_array([$this, $method], $parameters);
+        try {
+            return $this->newQuery()->$method(...$parameters);
+        } catch (BadMethodCallException $e) {
+            throw new BadMethodCallException(
+                sprintf('Call to undefined method %s::%s()', get_class($this), $method)
+            );
         }
-
-        return call_user_func_array([$this->newQuery(), $method], $parameters);
     }
 
     /**
-     * 代理静态方法调用
+     * Handle dynamic static method calls into the method.
      *
-     * @Author   liuchao
-     *
-     * @param $method
-     * @param $parameters
-     *
+     * @param  string  $method
+     * @param  array  $parameters
      * @return mixed
      */
     public static function __callStatic($method, $parameters)
     {
-        return call_user_func_array([(new static), $method], $parameters);
+        return (new static)->$method(...$parameters);
     }
 
 }
